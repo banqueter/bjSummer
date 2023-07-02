@@ -2,9 +2,7 @@ const app = (function () {
   const game = {};
   const suits = [`spades`, `hearts`, `clubs`, `diams`];
   const ranks = [`A`, 2, 3, 4, 5, 6, 7, 8, 9, 10, `J`, `Q`, `K`];
-  let gameDeck = [];
-
-  const cardDeck = [].concat(
+  const organizedCardDeck = [].concat(
     ...suits.map((suit) =>
       ranks.map((rank) => ({
         suit,
@@ -27,15 +25,37 @@ const app = (function () {
   }
 
   function buildDeck() {
-    gameDeck = shuffle(cardDeck);
-    console.log(gameDeck);
+    game.cardDeck = shuffle(organizedCardDeck);
+    console.log(game.cardDeck);
   }
 
   function init() {
     console.log(`init ready`);
     buildGameBoard();
+    turnOff(game.btnHit);
+    turnOff(game.btnStand);
     buildDeck();
     addClicker();
+  }
+
+  function takeCard(hand, element, hidden) {
+    let temp = game.cardDeck.shift();
+    console.log(temp);
+    hand.push(temp);
+    console.log(game);
+    showCard(temp, element);
+  }
+
+  function deal() {
+    game.dealerHand = [];
+    game.playerHand = [];
+    game.start = true;
+    turnOff(game.btnDeal);
+
+    takeCard(game.dealerHand, game.dealerCards, false);
+
+    game.playerCards.innerHTML = `Deal`;
+    game.dealerCards.innerHTML = `Deal`;
   }
 
   function addClicker() {
@@ -43,13 +63,17 @@ const app = (function () {
     game.btnStand.addEventListener(`click`, playerStand);
     game.btnHit.addEventListener(`click`, nextCard);
   }
-  function deal() {
-    game.dealerHand = [];
-    game.playerHand = [];
-    game.start = true;
-    game.playerCards.innerHTML = `Deal`;
-    game.dealerCards.innerHTML = `Deal`;
+
+  function turnOff(btn) {
+    btn.disabled = true;
+    btn.style.backgroundColour = `#ddd`;
   }
+
+  function turnOn(btn) {
+    btn.disabled = false;
+    btn.style.backgroundColour = `#000`;
+  }
+
   function playerStand() {
     console.log(`Player Stand`);
   }
