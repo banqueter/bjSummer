@@ -4,7 +4,11 @@ const app = (function () {
   const ranks = [`A`, 2, 3, 4, 5, 6, 7, 8, 9, 10, `J`, `Q`, `K`];
   // const ranks = [`A`, `A`, `A`, `A`, `A`, 2, `J`, `Q`, `K`];
 
-  const score = [];
+  const score = [0, 0];
+
+  function scoreBoard() {
+    game.scoreBoard.textContent = `Dealer ${score[0]} vs Player ${score[1]}`;
+  }
 
   const organizedCardDeck = [].concat(
     ...suits.map((suit) =>
@@ -33,12 +37,47 @@ const app = (function () {
   }
 
   function init() {
-    console.log(`init ready`);
+    // console.log(`init ready`);
+    game.cash = 100;
+    game.bet = 0;
     buildGameBoard();
     turnOff(game.btnHit);
     turnOff(game.btnStand);
     buildDeck();
     addClicker();
+    scoreBoard();
+    updateCash();
+  }
+
+  function updateCash() {
+    // console.log(isNaN(game.inputBet.value));
+    // if (isNaN(game.inputBet.value) || game.inputBet.value.lenght < 1) {
+    //   game.inputBet.value = 0;
+    // }
+    if (game.inputBet.value > game.cash) {
+      game.inputBet.value = game.cash;
+    }
+    game.bet = Number(game.inputBet.value);
+    game.playerCash.textContent = `Player cash $ ${game.cash - game.bet}`;
+  }
+
+  function lockWager(toggle) {
+    game.inputBet.disabled = toggle;
+    game.btnBet.disabled = toggle;
+    if (toggle) {
+      game.btnBet.style.backgroundColour = `#ddd`;
+      game.inputBet.style.backgroundColour = `#ddd`;
+    } else {
+      game.btnBet.style.backgroundColour = `#000`;
+      game.inputBet.style.backgroundColour = `#fff`;
+    }
+  }
+
+  function setBet() {
+    game.status.textContent = `You bet $ ${game.bet}`;
+    game.cash = game.cash - game.bet;
+    game.playerCash.textContent = `Player cash $ ${game.cash}`;
+    lockWager(true);
   }
 
   function takeCard(hand, element, hidden) {
@@ -87,6 +126,7 @@ const app = (function () {
     game.dealerHand = [];
     game.playerHand = [];
     game.start = true;
+    lockWager(true);
     turnOff(game.btnDeal);
     game.dealerScore.textContent = `-`;
     game.playerScore.textContent = `-`;
@@ -115,21 +155,30 @@ const app = (function () {
   function findWinner() {
     let player = scorer(game.playerHand);
     let dealer = scorer(game.dealerHand);
-    console.log(`PLayer: ${player}; Dealer: ${dealer}`);
-    if (player > 21) {
-      game.status.textContent = `You busted with ${player}`;
-    }
-    if (dealer > 21) {
-      game.status.textContent = `Dealer busted with ${dealer}`;
-    }
+    console.log(`Player: ${player}; Dealer: ${dealer}`);
     if (player === dealer) {
       game.status.textContent = `Draw! No winners; player: ${player} and dealer: ${dealer}`;
     }
-    if ((player <= 21 && player > dealer) || dealer > 21) {
-      game.status.textContent = `Congratulations! You are the winner; you sored ${player}`;
-    } else {
-      game.status.textContent = `The house wins with ${dealer}`;
+    game.cash = game.cash + game.bet;
+    if ((player <= 21 && player >= 17 && player > dealer) || dealer > 21) {
+      game.status.textContent = `Congratulations! You are the winner; you scored ${player}`;
+      score[1]++;
+      game.cash = game.cash + 2 * game.bet;
     }
+    if ((dealer <= 21 && dealer >= 17 && dealer > player) || player > 21) {
+      game.status.textContent = `The house wins with ${dealer}`;
+      score[0]++;
+      game.cash = game.cash - game.bet;
+    }
+    if (game.cash < 1) {
+      game.cash = 0;
+      game.bet = 0;
+    }
+    scoreBoard();
+    game.playerCash.textContent = "Player Cash $" + game.cash;
+    lockWager(false);
+    turnOff(game.btnHit);
+    turnOff(game.btnStand);
     turnOn(game.btnDeal);
   }
 
@@ -161,19 +210,25 @@ const app = (function () {
       game.status.textContent = `Dealer in play to 17 minimum.`;
       dealerPlay(dealer);
     }
+    if (dealer === 21 && game.dealerHand.lenght === 2) {
+      // BUG
+      game.status.textContent = `Dealer got Backjack`; // BUG
+      gameEnd(); // BUG
+      findWinner(); // BUG
+    } // BUG
   }
 
   function scoreAce(val, aces) {
     if (val < 21) {
-      console.log(`val>21`);
+      // console.log(`val>21`);
       return val;
     } else if (aces > 0) {
-      console.log(`elif ace>0`);
+      // console.log(`elif ace>0`);
       aces--;
       val -= 10;
       return scoreAce(val, aces);
     } else {
-      console.log(`else return value`);
+      // console.log(`else return value`);
       return val;
     }
   }
@@ -190,13 +245,25 @@ const app = (function () {
     if (ace > 0 && total > 21) {
       total = scoreAce(total, ace);
     }
+    if (total > 21) {
+      gameEnd();
+      return Number(total);
+    }
     return Number(total);
+  }
+
+  function gameEnd() {
+    turnOff(game.btnHit);
+    turnOff(game.btnStand);
+    console.log(`ended`);
   }
 
   function addClicker() {
     game.btnDeal.addEventListener(`click`, deal);
     game.btnStand.addEventListener(`click`, playerStand);
     game.btnHit.addEventListener(`click`, nextCard);
+    game.btnBet.addEventListener(`click`, setBet);
+    game.inputBet.addEventListener(`change`, updateCash);
   }
 
   function turnOff(btn) {
@@ -213,7 +280,7 @@ const app = (function () {
     game.main = document.querySelector(`#game`);
 
     game.scoreBoard = document.createElement(`div`);
-    game.scoreBoard.textContent = `Dealer 0 vs Player 0`;
+    game.scoreBoard.textContent = `Dealer ${score[0]} vs Player ${score[1]}`;
     game.scoreBoard.style.fonstSize = "2em";
     game.main.append(game.scoreBoard);
     game.table = document.createElement(`div`);
@@ -242,7 +309,7 @@ const app = (function () {
     game.dashboard = document.createElement(`div`);
     game.status = document.createElement(`div`);
     game.status.classList.add(`message`);
-    game.status.textContent = `Message for Player`;
+    game.status.textContent = ``;
 
     // Buttons
     game.btnDeal = document.createElement(`button`);
