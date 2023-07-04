@@ -1,7 +1,8 @@
 const app = (function () {
   const game = {};
   const suits = [`spades`, `hearts`, `clubs`, `diams`];
-  const ranks = [`A`, 2, 3, 4, 5, 6, 7, 8, 9, 10, `J`, `Q`, `K`];
+  // const ranks = [`A`, 2, 3, 4, 5, 6, 7, 8, 9, 10, `J`, `Q`, `K`];
+  const ranks = [2, 3, 4, 5, 6];
   // const ranks = [`A`, `A`, `A`, `A`, `A`, 2, `J`, `Q`, `K`];
 
   const score = [0, 0];
@@ -34,6 +35,8 @@ const app = (function () {
 
   function buildDeck() {
     game.cardDeck = shuffle(organizedCardDeck);
+    // console.log(organizedCardDeck);
+    // console.log(game.cardDeck);
   }
 
   function init() {
@@ -43,6 +46,7 @@ const app = (function () {
     buildGameBoard();
     turnOff(game.btnHit);
     turnOff(game.btnStand);
+    turnOff(game.btnDeal);
     buildDeck();
     addClicker();
     scoreBoard();
@@ -74,17 +78,19 @@ const app = (function () {
   }
 
   function setBet() {
-    game.status.textContent = `You bet $ ${game.bet}`;
-    game.cash = game.cash - game.bet;
-    game.playerCash.textContent = `Player cash $ ${game.cash}`;
-    lockWager(true);
+    if (game.bet < 5) {
+      game.status.textContent = `To be able to play you need to bet at least $5.00`;
+    } else {
+      game.status.textContent = `You bet $ ${game.bet}`;
+      game.cash = game.cash - game.bet;
+      game.playerCash.textContent = `Player cash $ ${game.cash}`;
+      buildDeck();
+      lockWager(true);
+      turnOn(game.btnDeal);
+    }
   }
 
   function takeCard(hand, element, hidden) {
-    if (game.cardDeck.lenght === 0) {
-      buildDeck();
-      console.log(`New deck shuffled`);
-    }
     let temp = game.cardDeck.shift();
     hand.push(temp);
     showCard(temp, element);
@@ -158,17 +164,22 @@ const app = (function () {
     console.log(`Player: ${player}; Dealer: ${dealer}`);
     if (player === dealer) {
       game.status.textContent = `Draw! No winners; player: ${player} and dealer: ${dealer}`;
-    }
-    game.cash = game.cash + game.bet;
-    if ((player <= 21 && player >= 17 && player > dealer) || dealer > 21) {
+      game.cash = game.cash + game.bet;
+      console.log(`game.cash ${game.cash} + game.bet ${game.bet}`);
+    } else if (
+      (player <= 21 && player >= 17 && player > dealer) ||
+      (dealer > 21 && player <= 21)
+    ) {
       game.status.textContent = `Congratulations! You are the winner; you scored ${player}`;
       score[1]++;
       game.cash = game.cash + 2 * game.bet;
-    }
-    if ((dealer <= 21 && dealer >= 17 && dealer > player) || player > 21) {
+      console.log(`game.cash ${game.cash} + 2* game.bet ${game.bet}`);
+    } else if (
+      (dealer <= 21 && dealer >= 17 && dealer > player) ||
+      (player > 21 && dealer <= 21)
+    ) {
       game.status.textContent = `The house wins with ${dealer}`;
       score[0]++;
-      game.cash = game.cash - game.bet;
     }
     if (game.cash < 1) {
       game.cash = 0;
